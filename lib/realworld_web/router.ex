@@ -68,9 +68,6 @@ defmodule RealworldWeb.Router do
       on_mount: [{RealworldWeb.UserAuth, :ensure_authenticated}] do
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-      live "/articles/new", ArticleLive.Index, :new
-      live "/articles/:id/edit", ArticleLive.Index, :edit
-      live "/articles/:id/show/edit", ArticleLive.Show, :edit
     end
   end
 
@@ -81,10 +78,14 @@ defmodule RealworldWeb.Router do
 
     live_session :current_user,
       on_mount: [{RealworldWeb.UserAuth, :mount_current_user}] do
-      live "/articles", ArticleLive.Index, :index
-      live "/articles/:id", ArticleLive.Show, :show
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
+
+      live "/articles/new", ArticleLive.Index, :new
+      live "/articles", ArticleLive.Index, :index
+      live "/articles/:id", ArticleLive.Show, :show
+      live "/articles/:id/edit", ArticleLive.Index, :edit
+      live "/articles/:id/show/edit", ArticleLive.Show, :edit
     end
   end
 end

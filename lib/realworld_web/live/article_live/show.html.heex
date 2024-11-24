@@ -1,29 +1,34 @@
-<.header>
-  Article <%= @article.id %>
-  <:subtitle>This is a article record from your database.</:subtitle>
-  <:actions>
-    <.link patch={~p"/articles/#{@article}/show/edit"} phx-click={JS.push_focus()}>
-      <.button>Edit article</.button>
-    </.link>
-  </:actions>
-</.header>
+<div>
+  <.header>
+    Article <%= @article.id %>
+    <:subtitle>This is a article record from your database.</:subtitle>
+    <:actions>
+      <%= if Policy.allowed_to?(Content, :update_article, @current_user, @article) do %>
+        <.link patch={~p"/articles/#{@article}/show/edit"} phx-click={JS.push_focus()}>
+          <.button>Edit article</.button>
+        </.link>
+      <% end %>
+    </:actions>
+  </.header>
 
-<.list>
-  <:item title="Title"><%= @article.title %></:item>
-  <:item title="Slug"><%= @article.slug %></:item>
-  <:item title="Description"><%= @article.description %></:item>
-  <:item title="Body"><%= @article.body %></:item>
-</.list>
+  <.list>
+    <:item title="Title"><%= @article.title %></:item>
+    <:item title="Slug"><%= @article.slug %></:item>
+    <:item title="Description"><%= @article.description %></:item>
+    <:item title="Body"><%= @article.body %></:item>
+  </.list>
 
-<.back navigate={~p"/articles"}>Back to articles</.back>
+  <.back navigate={~p"/articles"}>Back to articles</.back>
 
-<.modal :if={@live_action == :edit} id="article-modal" show on_cancel={JS.patch(~p"/articles/#{@article}")}>
-  <.live_component
-    module={RealworldWeb.ArticleLive.FormComponent}
-    id={@article.id}
-    title={@page_title}
-    action={@live_action}
-    article={@article}
-    patch={~p"/articles/#{@article}"}
-  />
-</.modal>
+  <.modal :if={@live_action == :edit} id="article-modal" show on_cancel={JS.patch(~p"/articles/#{@article}")}>
+    <.live_component
+      module={RealworldWeb.ArticleLive.FormComponent}
+      id={@article.id}
+      title={@page_title}
+      action={@live_action}
+      article={@article}
+      current_user={@current_user}
+      patch={~p"/articles/#{@article}"}
+    />
+  </.modal>
+</div>

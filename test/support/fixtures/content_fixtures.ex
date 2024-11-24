@@ -4,6 +4,8 @@ defmodule Realworld.ContentFixtures do
   entities via the `Realworld.Content` context.
   """
 
+  import Realworld.AccountsFixtures
+
   @doc """
   Generate a unique article slug.
   """
@@ -13,13 +15,16 @@ defmodule Realworld.ContentFixtures do
   Generate a article.
   """
   def article_fixture(attrs \\ %{}) do
+    author = attrs[:author] || user_fixture()
+
     {:ok, article} =
       attrs
       |> Enum.into(%{
         body: "some body",
         description: "some description",
         slug: unique_article_slug(),
-        title: "some title"
+        title: "some title",
+        author_id: author.id
       })
       |> Realworld.Content.create_article()
 
