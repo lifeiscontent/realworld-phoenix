@@ -80,6 +80,12 @@ defmodule RealworldWeb.Router do
       on_mount: [{RealworldWeb.UserAuth, :mount_current_user}] do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
+
+      live "/articles/new", ArticleLive.Index, :new
+      live "/articles", ArticleLive.Index, :index
+      live "/articles/:id", ArticleLive.Show, :show
+      live "/articles/:id/edit", ArticleLive.Index, :edit
+      live "/articles/:id/show/edit", ArticleLive.Show, :edit
     end
   end
 end

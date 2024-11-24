@@ -1,0 +1,50 @@
+<.header>
+  Listing Articles
+  <:actions>
+    <%= if Policy.allowed_to?(Content, :create_article, @current_user) do %>
+      <.link patch={~p"/articles/new"}>
+        <.button>New Article</.button>
+      </.link>
+    <% end %>
+  </:actions>
+</.header>
+
+<.table
+  id="articles"
+  rows={@streams.articles}
+  row_click={fn {_id, article} -> JS.navigate(~p"/articles/#{article}") end}
+>
+  <:col :let={{_id, article}} label="Title"><%= article.title %></:col>
+  <:col :let={{_id, article}} label="Slug"><%= article.slug %></:col>
+  <:col :let={{_id, article}} label="Description"><%= article.description %></:col>
+  <:action :let={{_id, article}}>
+    <div class="sr-only">
+      <.link navigate={~p"/articles/#{article}"}>Show</.link>
+    </div>
+    <%= if Policy.allowed_to?(Content, :update_article, @current_user, article) do %>
+      <.link patch={~p"/articles/#{article}/edit"}>Edit</.link>
+    <% end %>
+  </:action>
+  <:action :let={{id, article}}>
+    <%= if Policy.allowed_to?(Content, :delete_article, @current_user, article) do %>
+      <.link
+        phx-click={JS.push("delete", value: %{id: article.id}) |> hide("##{id}")}
+        data-confirm="Are you sure?"
+      >
+        Delete
+      </.link>
+    <% end %>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="article-modal" show on_cancel={JS.patch(~p"/articles")}>
+  <.live_component
+    module={RealworldWeb.ArticleLive.FormComponent}
+    id={@article.id || :new}
+    title={@page_title}
+    action={@live_action}
+    article={@article}
+    current_user={@current_user}
+    patch={~p"/articles"}
+  />
+</.modal>
