@@ -2,6 +2,7 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
   use RealworldWeb, :live_component
 
   alias Realworld.Content
+  alias Realworld.Policy
 
   @impl true
   def render(assigns) do
@@ -33,18 +34,22 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
 
   @impl true
   def update(%{article: article} = assigns, socket) do
+    changeset = Content.change_article(article)
+
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_new(:form, fn ->
-       to_form(Content.change_article(article))
-     end)}
+     |> assign(:form, to_form(changeset))}
   end
 
   @impl true
   def handle_event("validate", %{"article" => article_params}, socket) do
-    changeset = Content.change_article(socket.assigns.article, article_params)
-    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+    changeset =
+      socket.assigns.article
+      |> Content.change_article(article_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :form, to_form(changeset))}
   end
 
   def handle_event("save", %{"article" => article_params}, socket) do
@@ -52,32 +57,45 @@ defmodule RealworldWeb.ArticleLive.FormComponent do
   end
 
   defp save_article(socket, :edit, article_params) do
-    case Content.update_article(socket.assigns.article, article_params) do
-      {:ok, article} ->
-        notify_parent({:saved, article})
+    with {:ok, article} <- Policy.authorize(Content, :update_article, socket.assigns.current_user, socket.assigns.article),
+         {:ok, article} <- Content.update_article(article, article_params) do
+      notify_parent({:saved, article})
 
+      {:noreply,
+       socket
+       |> put_flash(:info, "Article updated successfully")
+       |> push_patch(to: socket.assigns.patch)}
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :form, to_form(changeset))}
+
+      {:error, message} when is_binary(message) ->
         {:noreply,
          socket
-         |> put_flash(:info, "Article updated successfully")
+         |> put_flash(:error, message)
          |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
     end
   end
 
   defp save_article(socket, :new, article_params) do
-    case Content.create_article(article_params) do
-      {:ok, article} ->
-        notify_parent({:saved, article})
+    with {:ok, _} <- Policy.authorize(Content, :create_article, socket.assigns.current_user),
+         params = Map.put(article_params, "author_id", socket.assigns.current_user.id),
+         {:ok, article} <- Content.create_article(params) do
+      notify_parent({:saved, article})
 
+      {:noreply,
+       socket
+       |> put_flash(:info, "Article created successfully")
+       |> push_patch(to: socket.assigns.patch)}
+    else
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :form, to_form(changeset))}
+
+      {:error, message} when is_binary(message) ->
         {:noreply,
          socket
-         |> put_flash(:info, "Article created successfully")
+         |> put_flash(:error, message)
          |> push_patch(to: socket.assigns.patch)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
     end
   end
 

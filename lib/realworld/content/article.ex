@@ -15,8 +15,8 @@ defmodule Realworld.Content.Article do
   @doc false
   def changeset(article, attrs) do
     article
-    |> cast(attrs, [:title, :slug, :description, :body])
-    |> validate_required([:title, :slug, :description, :body])
+    |> cast(attrs, [:title, :slug, :description, :body, :author_id])
+    |> validate_required([:title, :slug, :description, :body, :author_id])
     |> unique_constraint(:slug)
   end
 end

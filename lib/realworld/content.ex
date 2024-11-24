@@ -7,6 +7,16 @@ defmodule Realworld.Content do
   alias Realworld.Repo
 
   alias Realworld.Content.Article
+  alias Realworld.Accounts.User
+
+  @behaviour Realworld.Policy
+
+  def authorize(:list_articles, _user, resource), do: {:ok, resource}
+  def authorize(:read_article, _user, resource), do: {:ok, resource}
+  def authorize(:create_article, %User{}, resource), do: {:ok, resource}
+  def authorize(:update_article, %User{id: user_id}, %Article{author_id: user_id} = resource), do: {:ok, resource}
+  def authorize(:delete_article, %User{id: user_id}, %Article{author_id: user_id} = resource), do: {:ok, resource}
+  def authorize(_, _, _), do: {:error, :unauthorized}
 
   @doc """
   Returns the list of articles.

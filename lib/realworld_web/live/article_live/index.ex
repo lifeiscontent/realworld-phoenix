@@ -3,10 +3,18 @@ defmodule RealworldWeb.ArticleLive.Index do
 
   alias Realworld.Content
   alias Realworld.Content.Article
+  alias Realworld.Policy
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :articles, Content.list_articles())}
+    with {:ok, _} <- Policy.authorize(Content, :list_articles, socket.assigns.current_user) do
+      {:ok,
+       socket
+       |> stream(:articles, Content.list_articles())}
+    else
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
   end
 
   @impl true
@@ -15,15 +23,27 @@ defmodule RealworldWeb.ArticleLive.Index do
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    socket
-    |> assign(:page_title, "Edit Article")
-    |> assign(:article, Content.get_article!(id))
+    with {:ok, article} <- Policy.authorize(Content, :update_article, socket.assigns.current_user, Content.get_article!(id)) do
+      socket
+      |> assign(:page_title, "Edit Article")
+      |> assign(:article, article)
+    else
+      {:error, reason} ->
+        socket
+        |> put_flash(:error, reason)
+        |> push_patch(to: ~p"/articles")
+    end
   end
 
   defp apply_action(socket, :new, _params) do
-    socket
-    |> assign(:page_title, "New Article")
-    |> assign(:article, %Article{})
+    with {:ok, article} <- Policy.authorize(Content, :create_article, socket.assigns.current_user, %Article{}) do
+      socket
+      |> assign(:page_title, "New Article")
+      |> assign(:article, article)
+    else
+      {:error, reason} ->
+        socket |> put_flash(:error, reason) |> push_patch(to: ~p"/articles")
+    end
   end
 
   defp apply_action(socket, :index, _params) do
@@ -39,9 +59,12 @@ defmodule RealworldWeb.ArticleLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    article = Content.get_article!(id)
-    {:ok, _} = Content.delete_article(article)
-
-    {:noreply, stream_delete(socket, :articles, article)}
+    with {:ok, article} <- Policy.authorize(Content, :delete_article, socket.assigns.current_user, Content.get_article!(id)) do
+      {:ok, _} = Content.delete_article(article)
+      {:noreply, stream_delete(socket, :articles, article)}
+    else
+      {:error, reason} ->
+        {:noreply, socket |> put_flash(:error, reason) |> push_navigate(to: ~p"/articles")}
+    end
   end
 end
